@@ -1,10 +1,11 @@
 #! /usr/bin/env bash
 
 # More info at: https://github.com/elitak/nixos-infect
-
+echo "BEGIN"
 set -e -o pipefail
 
 makeConf() {
+  echo "makeConf"
   # Skip everything if main config already present
   [[ -e /etc/nixos/configuration.nix ]] && return 0
 
@@ -94,6 +95,7 @@ EOF
 }
 
 makeNetworkingConf() {
+  echo "makeNetworkingConf"
   # XXX It'd be better if we used procfs for all this...
   local IFS=$'\n'
   eth0_name=$(ip address show | grep '^12:' | awk -F': ' '{print $2}')
@@ -169,6 +171,7 @@ EOF
 }
 
 checkExistingSwap() {
+  echo "checkExistingSwap"
   SWAPSHOW=$(swapon --show --noheadings --raw)
   zramswap=true
   swapcfg=""
@@ -183,6 +186,7 @@ checkExistingSwap() {
 }
 
 makeSwap() {
+  echo "makeSwap"
   swapFile=$(mktemp /tmp/nixos-infect.XXXXX.swp)
   dd if=/dev/zero "of=$swapFile" bs=1M count=$((1*1024))
   chmod 0600 "$swapFile"
@@ -191,19 +195,23 @@ makeSwap() {
 }
 
 removeSwap() {
+  echo "removeSwap"
   swapoff -a
   rm -vf /tmp/nixos-infect.*.swp
 }
 
 isX86_64() {
+  echo "isX86_64"
   [[ "$(uname -m)" == "x86_64" ]]
 }
 
 isEFI() {
+  echo "isEFI"
   [ -d /sys/firmware/efi ]
 }
 
 findESP() {
+echo "findESP"
   esp=""
   for d in /boot/EFI /boot/efi /boot; do
     [[ ! -d "$d" ]] && continue
@@ -218,10 +226,12 @@ findESP() {
 }
 
 prepareEnv() {
+  echo "prepareEnv"
   # $esp and $grubdev are used in makeConf()
   if isEFI; then
     esp="$(findESP)"
   else
+    echo "grubdev go"
     for grubdev in /dev/vda /dev/sda /dev/xvda /dev/nvme0n1 ; do [[ -e $grubdev ]] && break; done
   fi
 
@@ -241,6 +251,7 @@ prepareEnv() {
 }
 
 fakeCurlUsingWget() {
+  echo "fakeCurlUsingWget"
   # Use adapted wget if curl is missing
   which wget && { \
     curl() {
@@ -269,10 +280,12 @@ fakeCurlUsingWget() {
 }
 
 req() {
+  echo "req"
   type "$1" > /dev/null 2>&1 || which "$1" > /dev/null 2>&1
 }
 
 checkEnv() {
+  echo "checkEnv"
   [[ "$(whoami)" == "root" ]] || { echo "ERROR: Must run as root"; return 1; }
 
   # Perform some easy fixups before checking
@@ -303,6 +316,7 @@ checkEnv() {
 }
 
 infect() {
+  echo "infect"
   # Add nix build users
   # FIXME run only if necessary, rather than defaulting true
   groupadd nixbld -g 30000 || true
