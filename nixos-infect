@@ -7,7 +7,7 @@ set -e -o pipefail
 makeConf() {
   echo "makeConf"
   # Skip everything if main config already present
-  [[ -e /mnt/etc/nixos/configuration.nix ]] && return 0
+  [[ -e /mnt/xvda1/etc/nixos/configuration.nix ]] && return 0
 
   # Lightsail config is not like the others
   if [ "$PROVIDER" = "lightsail" ]; then
@@ -19,7 +19,7 @@ makeConf() {
   mkdir -p /etc/nixos
   # Prevent grep for sending error code 1 (and halting execution) when no lines are selected : https://www.unix.com/man-page/posix/1P/grep
   local IFS=$'\n'
-  for trypath in /mnt/root/.ssh/authorized_keys /mnt/home/$SUDO_USER/.ssh/authorized_keys $HOME/.ssh/authorized_keys; do
+  for trypath in /mnt/xvda1/xvda1/root/.ssh/authorized_keys /mnt/xvda1/home/$SUDO_USER/.ssh/authorized_keys $HOME/.ssh/authorized_keys; do
       [[ -r "$trypath" ]] \
       && keys=$(sed -E 's/^.*((ssh|ecdsa)-[^[:space:]]+)[[:space:]]+([^[:space:]]+)([[:space:]]*.*)$/\1 \3\4/' "$trypath") \
       && break
@@ -27,7 +27,7 @@ makeConf() {
   local network_import=""
 
   [[ -n "$doNetConf" ]] && network_import="./networking.nix # generated at runtime by nixos-infect"
-  cat > /mnt/etc/nixos/configuration.nix << EOF
+  cat > /mnt/xvda1/etc/nixos/configuration.nix << EOF
 { ... }: {
   imports = [
     ./hardware-configuration.nix
@@ -53,7 +53,7 @@ EOF
     efiInstallAsRemovable = true;
     device = "nodev";
   };
-  fileSystems."/mnt/boot" = { device = "$esp"; fsType = "vfat"; };
+  fileSystems."/mnt/xvda1/boot" = { device = "$esp"; fsType = "vfat"; };
 EOF
 )
   else
@@ -69,7 +69,7 @@ EOF
   fi
 
   # If you rerun this later, be sure to prune the filesSystems attr
-  cat > /mnt/etc/nixos/hardware-configuration.nix << EOF
+  cat > /mnt/xvda1/etc/nixos/hardware-configuration.nix << EOF
 { modulesPath, ... }:
 {
   imports = [ (modulesPath + "/profiles/qemu-guest.nix") ];
@@ -85,8 +85,8 @@ EOF
 }
 
 makeLightsailConf() {
-  mkdir -p /mnt/etc/nixos
-  cat > /mnt/etc/nixos/configuration.nix << EOF
+  mkdir -p /mnt/xvda1/etc/nixos
+  cat > /mnt/xvda1/etc/nixos/configuration.nix << EOF
 { config, pkgs, modulesPath, ... }:
 {
   imports = [ "\${modulesPath}/virtualisation/amazon-image.nix" ];
@@ -125,7 +125,7 @@ EOF
     extraRules1=""
   fi
 
-  readarray nameservers < <(grep ^nameserver /mnt/etc/resolv.conf | sed -r \
+  readarray nameservers < <(grep ^nameserver /mnt/xvda1/etc/resolv.conf | sed -r \
     -e 's/^nameserver[[:space:]]+([0-9.a-fA-F:]+).*/"\1"/' \
     -e 's/127[0-9.]+/8.8.8.8/' \
     -e 's/::1/8.8.8.8/' )
@@ -135,7 +135,7 @@ EOF
   else
     predictable_inames="usePredictableInterfaceNames = lib.mkForce true;"
   fi
-  cat > /mnt/etc/nixos/networking.nix << EOF
+  cat > /mnt/xvda1/etc/nixos/networking.nix << EOF
 { lib, ... }: {
   # This file was populated at runtime with the networking
   # details gathered from the active system.
@@ -187,8 +187,8 @@ checkExistingSwap() {
 
 makeSwap() {
   echo "makeSwap"
-  swapFile=$(mktemp /mnt/tmp/nixos-infect.XXXXX.swp)
-  dd if=/mnt/dev/zero "of=$swapFile" bs=1M count=$((1*1024))
+  swapFile=$(mktemp /mnt/xvda1/tmp/nixos-infect.XXXXX.swp)
+  dd if=/mnt/xvda1/dev/zero "of=$swapFile" bs=1M count=$((1*1024))
   chmod 0600 "$swapFile"
   mkswap "$swapFile"
   swapon -v "$swapFile"
@@ -197,7 +197,7 @@ makeSwap() {
 removeSwap() {
   echo "removeSwap"
   swapoff -a
-  rm -vf /mnt/tmp/nixos-infect.*.swp
+  rm -vf /mnt/xvda1/tmp/nixos-infect.*.swp
 }
 
 isX86_64() {
@@ -213,7 +213,7 @@ isEFI() {
 findESP() {
 echo "findESP"
   esp=""
-  for d in /mnt/boot/EFI /mnt/boot/efi /mnt/boot; do
+  for d in /mnt/xvda1/boot/EFI /mnt/xvda1/boot/efi /mnt/xvda1/boot; do
     [[ ! -d "$d" ]] && continue
     [[ "$d" == "$(df "$d" --output=target | sed 1d)" ]] \
       && esp="$(df "$d" --output=source | sed 1d)" \
@@ -248,7 +248,7 @@ prepareEnv() {
   # Nix installer tries to use sudo regardless of whether we're already uid 0
   #which sudo || { sudo() { eval "$@"; }; export -f sudo; }
   # shellcheck disable=SC2174
-  mkdir -p -m 0755 /mnt/nix
+  mkdir -p -m 0755 /mnt/xvda1/nix
 }
 
 fakeCurlUsingWget() {
@@ -338,12 +338,12 @@ infect() {
   nix-channel --add "https://nixos.org/channels/$NIX_CHANNEL" nixos
   nix-channel --update
 
-  export NIXOS_CONFIG="${NIXOS_CONFIG:-/mnt/etc/nixos/configuration.nix}"
+  export NIXOS_CONFIG="${NIXOS_CONFIG:-/mnt/xvda1/etc/nixos/configuration.nix}"
 
   nix-env --set \
     -I nixpkgs=$HOME/.nix-defexpr/channels/nixos \
     -f '<nixpkgs/nixos>' \
-    -p /mnt/nix/var/nix/profiles/system \
+    -p /mnt/xvda1/nix/var/nix/profiles/system \
     -A system
 
   # Remove nix installed with curl | bash
@@ -373,12 +373,12 @@ infect() {
   mv -v /boot /boot.bak || { cp -a /boot /boot.bak ; rm -rf /boot/* ; umount /boot ; }
   if isEFI; then
     echo "IS EFI"
-    mkdir -p /mnt/boot
-    mount "$esp" /mnt/boot
+    mkdir -p /mnt/xvda1/boot
+    mount "$esp" /mnt/xvda1/boot
     find /boot -depth ! -path /boot -exec rm -rf {} +
   fi
   echo "SWITCH TO CONFIGURATION BOOT"
-  /mnt/nix/var/nix/profiles/system/bin/switch-to-configuration boot
+  /mnt/xvda1/nix/var/nix/profiles/system/bin/switch-to-configuration boot
   echo "END INFECT FUNCTION"
 }
 
