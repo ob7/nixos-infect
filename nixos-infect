@@ -206,7 +206,7 @@ isX86_64() {
 }
 
 isEFI() {
-  echo "isEFI"
+  echo "isEFI function go"
   [ -d /sys/firmware/efi ]
 }
 
@@ -229,6 +229,7 @@ prepareEnv() {
   echo "prepareEnv"
   # $esp and $grubdev are used in makeConf()
   if isEFI; then
+    echo "PREPARE FOR EFI"
     esp="$(findESP)"
   else
     echo "grubdev go"
@@ -378,6 +379,7 @@ infect() {
   fi
   echo "SWITCH TO CONFIGURATION BOOT"
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
+  echo "END INFECT FUNCTION"
 }
 
 [ "$PROVIDER" = "digitalocean" ] && doNetConf=y # digitalocean requires detailed network config to be generated
