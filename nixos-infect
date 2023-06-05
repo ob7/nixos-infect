@@ -361,6 +361,7 @@ infect() {
     find /boot -depth ! -path /boot -exec rm -rf {} +
   fi
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
+  echo "DONE"
 }
 
 [ "$PROVIDER" = "digitalocean" ] && doNetConf=y # digitalocean requires detailed network config to be generated
