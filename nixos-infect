@@ -326,9 +326,9 @@ infect() {
   # TODO use addgroup and adduser as fallbacks
   #addgroup nixbld -g 30000 || true
   #for i in {1..10}; do adduser -DH -G nixbld nixbld$i || true; done
-
+  echo "curl nix install"
   curl -L https://nixos.org/nix/install | sh -s -- --no-channel-add
-
+  echo "end curl nix install"
   # shellcheck disable=SC1090
   source ~/.nix-profile/etc/profile.d/nix.sh
 
@@ -367,13 +367,16 @@ infect() {
 
   rm -rf /boot.bak
   isEFI && umount "$esp"
-
+  
+  echo "mv boot boot.bak"
   mv -v /boot /boot.bak || { cp -a /boot /boot.bak ; rm -rf /boot/* ; umount /boot ; }
   if isEFI; then
+    echo "IS EFI"
     mkdir -p /boot
     mount "$esp" /boot
     find /boot -depth ! -path /boot -exec rm -rf {} +
   fi
+  echo "SWITCH TO CONFIGURATION BOOT"
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
 
