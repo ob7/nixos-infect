@@ -361,7 +361,6 @@ infect() {
     find /boot -depth ! -path /boot -exec rm -rf {} +
   fi
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
-  echo "DONE"
 }
 
 [ "$PROVIDER" = "digitalocean" ] && doNetConf=y # digitalocean requires detailed network config to be generated
@@ -369,19 +368,31 @@ infect() {
 if [[ "$PROVIDER" = "digitalocean" ]] || [[ "$PROVIDER" = "servarica" ]] || [[ "$PROVIDER" = "hetznercloud" ]]; then
 	doNetConf=y # some providers require detailed network config to be generated
 fi
-
+echo "START checkEnv"
 checkEnv
+echo "END checkEnv"
+echo "START prepareEnv"
 prepareEnv
+echo "END prepareEnv"
+echo "START checkExistingSwap"
 checkExistingSwap
+echo "END checkExistingSwap"
 if [[ -z "$NO_SWAP" ]]; then
+    echo "NO SWAP"
     makeSwap # smallest (512MB) droplet needs extra memory!
 fi
+echo "START makeConf"
 makeConf
+echo "END makeConf"
+echo "START infect"
 infect
+echo "END infect"
 if [[ -z "$NO_SWAP" ]]; then
+    echo "REMOVE SWAP"
     removeSwap
 fi
 
 if [[ -z "$NO_REBOOT" ]]; then
+  echo "REBOOT"
   reboot
 fi
