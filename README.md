@@ -9,6 +9,7 @@ then run the script, it should fail at trying to install grub.  Thats okay becau
 Then change kernel on vm to the pvh-grub one in rimuhosting cp.  
 
 Should boot up into nixos.
+make grub device nodev in configuration.nix to allow for nixos-rebuild switch to work without fail.
 # NixOS-Infect
 
 ## What is this?
