@@ -1,3 +1,16 @@
+Installing NixOS on rimuhosting VPS instructions:
+Start with ubuntu install
+git clone nixos-infect, run with provider as digitalocean in order to generate networking.nix. add your ssh key to authorized_keys in /root/.ssh
+
+nixos-infect script needs to be changed so that it selects the right network, the right one for me was 12.  Also change the order it checks for boot drives so that xvda is the last, because it will generate configuration based on last entry in loop when it fails to find boot drive.
+add services.getty.autologinUser = "root" so that you can login after nixos-infect.  The install itself will fail before prompting you to make a password.
+then run the script, it should fail at trying to install grub.  Thats okay because it should still make the entry.  Check /boot/grub/grub.cfg and there should be nixos entry.
+
+Then change kernel on vm to the pvh-grub one in rimuhosting cp.  
+
+Should boot up into nixos.
+
+
 # NixOS-Infect
 
 ## What is this?
